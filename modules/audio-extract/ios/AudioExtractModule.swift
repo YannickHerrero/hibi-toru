@@ -8,8 +8,8 @@ import Foundation
  * produces AAC inside an MP4 container (.m4a) regardless of the input
  * codec. This is simpler than the Kotlin pipeline (which fast-paths
  * codec-compatible remuxes) at the cost of always re-encoding —
- * acceptable since downstream consumers (Whisper transcription, Anki
- * audio cards) only care about the bytes being readable.
+ * acceptable since downstream consumers (Whisper transcription, Hibi
+ * mined-card audio uploads) only care about the bytes being readable.
  *
  * Output extension is forced to .m4a even if `outPath` requested
  * something else; the JS caller already inspects the returned path
