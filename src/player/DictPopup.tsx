@@ -12,12 +12,20 @@ import { getEntries, type DictEntry } from '@/analysis/dict';
 import { uuid } from '@/utils/uuid';
 import { addSavedWord } from '@/storage/savedWords';
 
+export type MineHandler = (
+  cue: Cue,
+  dict: DictMatch['dict'],
+  entry: DictEntry,
+  tokenSpan: [number, number],
+) => void;
+
 export interface DictPopupProps {
   visible: boolean;
   cue: Cue | null;
   tokenIndex: number;
   sourceEntryId: string;
   onClose: () => void;
+  onMine?: MineHandler;
 }
 
 export function DictPopup({
@@ -26,6 +34,7 @@ export function DictPopup({
   tokenIndex,
   sourceEntryId,
   onClose,
+  onMine,
 }: DictPopupProps) {
   const matches = cue?.matchesByTokenIndex[tokenIndex] ?? [];
   const [activeIdx, setActiveIdx] = useState(0);
@@ -76,6 +85,7 @@ export function DictPopup({
                   match={matches[activeIdx]}
                   cue={cue}
                   sourceEntryId={sourceEntryId}
+                  onMine={onMine}
                 />
               </>
             )}
@@ -118,10 +128,12 @@ function MatchView({
   match,
   cue,
   sourceEntryId,
+  onMine,
 }: {
   match: DictMatch;
   cue: Cue | null;
   sourceEntryId: string;
+  onMine?: MineHandler;
 }) {
   const entries = getEntries(match.entryIds, match.dict);
   if (entries.length === 0) {
@@ -136,6 +148,8 @@ function MatchView({
           dict={match.dict}
           cue={cue}
           sourceEntryId={sourceEntryId}
+          tokenSpan={match.tokenSpan}
+          onMine={onMine}
         />
       ))}
     </View>
@@ -147,11 +161,15 @@ function DictEntryView({
   dict,
   cue,
   sourceEntryId,
+  tokenSpan,
+  onMine,
 }: {
   entry: DictEntry;
   dict: 'jmdict' | 'jmnedict';
   cue: Cue | null;
   sourceEntryId: string;
+  tokenSpan: [number, number];
+  onMine?: MineHandler;
 }) {
   const [saved, setSaved] = useState(false);
   const surface = entry.forms[0] ?? entry.readings[0] ?? '';
@@ -190,6 +208,15 @@ function DictEntryView({
           ) : null}
         </View>
         <View style={styles.entryActions}>
+          {onMine && cue ? (
+            <Pressable
+              onPress={() => onMine(cue, dict, entry, tokenSpan)}
+              hitSlop={8}
+              style={styles.mineButton}
+            >
+              <Text style={styles.mineButtonText}>＋ Mine</Text>
+            </Pressable>
+          ) : null}
           <Pressable onPress={onSave} hitSlop={8}>
             <Text style={[styles.star, saved && styles.starOn]}>{saved ? '★' : '☆'}</Text>
           </Pressable>
@@ -282,6 +309,13 @@ const styles = StyleSheet.create({
   star: { color: '#666', fontSize: 24 },
   starOn: { color: '#fbbf24' },
   entryActions: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  mineButton: {
+    backgroundColor: '#1f2937',
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 4,
+  },
+  mineButtonText: { color: '#fff', fontSize: 12, fontWeight: '600' },
   frequency: { color: '#888', fontSize: 12 },
   nameType: { color: '#a78bfa', fontSize: 12, fontWeight: '600' },
   sense: { marginTop: 6, gap: 2 },
