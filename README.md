@@ -1,8 +1,8 @@
-# Pureyaa
+# Hibi Toru
 
-A Japanese immersion video player for personal use. Pair a video file with an `.srt` subtitle, run a one-time analysis, then watch with tap-to-define dictionary popups for every word.
+A Japanese immersion video player for the Hibi ecosystem. Pair a video file with an `.srt` subtitle, run a one-time analysis, then watch with tap-to-define dictionary popups and mine cards directly to the Hibi backend.
 
-Built with Expo / React Native. Targets Android — designed and tested on a Samsung Galaxy Z Fold 7 inner screen in portrait.
+Built with Expo / React Native. Forked from [Pureyaa](https://github.com/yherrero/pureyaa); adapted to use the [Hibi API](https://hibi-api.vercel.app) for card storage and FSRS scheduling.
 
 > **Status:** MVP. Personal-use scope. The bundle is large (dictionaries are loaded locally) and there is no cloud sync.
 

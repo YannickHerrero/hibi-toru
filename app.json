@@ -1,11 +1,11 @@
 {
   "expo": {
-    "name": "Pureyaa",
-    "slug": "pureyaa",
-    "version": "0.1.1",
+    "name": "Hibi Toru",
+    "slug": "hibi-toru",
+    "version": "0.1.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
-    "scheme": "pureyaa",
+    "scheme": "hibi-toru",
     "userInterfaceStyle": "automatic",
     "splash": {
       "image": "./assets/splash.png",
@@ -13,7 +13,7 @@
       "backgroundColor": "#DDE4D2"
     },
     "android": {
-      "package": "com.pureyaa.app",
+      "package": "com.hibi.toru",
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#DDE4D2"
@@ -37,20 +37,13 @@
     "extra": {
       "router": {
         "origin": false
-      },
-      "eas": {
-        "projectId": "6bd145bf-f059-435e-9d30-eb5b9ca19864"
       }
     },
-    "owner": "yherrero",
     "runtimeVersion": {
       "policy": "appVersion"
     },
-    "updates": {
-      "url": "https://u.expo.dev/6bd145bf-f059-435e-9d30-eb5b9ca19864"
-    },
     "ios": {
-      "bundleIdentifier": "com.pureyaa.app",
+      "bundleIdentifier": "com.hibi.toru",
       "supportsTablet": false,
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,

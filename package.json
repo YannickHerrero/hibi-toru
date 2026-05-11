@@ -1,5 +1,5 @@
 {
-  "name": "pureyaa",
+  "name": "hibi-toru",
   "version": "0.1.0",
   "private": true,
   "main": "expo-router/entry",
@@ -7,10 +7,7 @@
     "start": "expo start",
     "android": "expo start --android",
     "web": "expo start --web",
-    "typecheck": "tsc --noEmit",
-    "export:update": "expo export --platform ios --platform android --source-maps --dump-assetmap --no-bytecode --output-dir dist-update",
-    "update:staging": "pnpm export:update && eas update --skip-bundler --input-dir dist-update --branch staging --message",
-    "update:production": "pnpm export:update && eas update --skip-bundler --input-dir dist-update --branch production --message"
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.32.1",
