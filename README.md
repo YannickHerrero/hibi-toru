@@ -1,8 +1,15 @@
 # Hibi Toru
 
-A Japanese immersion video player for the Hibi ecosystem. Pair a video file with an `.srt` subtitle, run a one-time analysis, watch with tap-to-define dictionary popups, and mine cards directly into the [Hibi](https://hibi-api.vercel.app) backend for FSRS-scheduled review in [Hibi-Koe](https://github.com/yherrero/hibi-koe) or the Hibi portal.
+A Japanese immersion video player for the Hibi ecosystem. Pair a video file with an `.srt` subtitle, run a one-time analysis, watch with tap-to-define dictionary popups, and mine cards directly into the [Hibi](https://github.com/YannickHerrero/hibi) backend for FSRS-scheduled review in [Hibi-Koe](https://github.com/YannickHerrero/hibi-koe), [Hibi-Yomi](https://github.com/YannickHerrero/hibi-yomi), or the Hibi portal.
 
-Built with Expo / React Native. Forked from [Pureyaa](https://github.com/yherrero/pureyaa); the Anki-only export path has been replaced with `hibi-client`.
+Built with Expo / React Native. Forked from [Pureyaa](https://github.com/YannickHerrero/pureyaa); the Anki-only export path has been replaced with `hibi-client`.
+
+## The Hibi ecosystem
+
+- [**Hibi**](https://github.com/YannickHerrero/hibi) — main API + portal, `hibi-client` SDK, shared types, FSRS scheduler.
+- [**Hibi-Koe**](https://github.com/YannickHerrero/hibi-koe) — listening app: mines cards from audio + subtitles.
+- [**Hibi-Yomi**](https://github.com/YannickHerrero/hibi-yomi) — reading app.
+- **Hibi-Toru** (this repo) — video immersion + mining.
 
 ## Features
 
@@ -67,7 +74,7 @@ Open the app, go to **Settings**, and paste:
 
 ## Dictionary data
 
-The repo ships with empty placeholders for JMDict / JMnedict. Populate them per the [original Pureyaa instructions](https://github.com/yherrero/pureyaa#dictionary-data).
+The repo ships with empty placeholders for JMDict / JMnedict. Populate them per the [original Pureyaa instructions](https://github.com/YannickHerrero/pureyaa#dictionary-data).
 
 ## Privacy
 
@@ -81,7 +88,7 @@ MIT — see [LICENSE](./LICENSE).
 
 ## Acknowledgements
 
-- [Pureyaa](https://github.com/yherrero/pureyaa) — base app.
-- [Hibi-Koe](https://github.com/yherrero/hibi-koe) — reference integration for the Hibi client + Torakaa design system.
+- [Pureyaa](https://github.com/YannickHerrero/pureyaa) — base app.
+- [Hibi-Koe](https://github.com/YannickHerrero/hibi-koe) — reference integration for the Hibi client + Torakaa design system.
 - [JMDict / JMnedict](https://www.edrdg.org/jmdict/edict.html) — © EDRDG, used under the EDRDG license.
 - [kuromoji](https://github.com/atilika/kuromoji) — Apache 2.0.
