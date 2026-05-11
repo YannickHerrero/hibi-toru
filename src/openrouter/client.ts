@@ -1,7 +1,7 @@
 /**
  * OpenRouter base client. Auth headers, key validation, error formatting.
  *
- * Pureyaa funnels analysis (Claude), TTS (OpenAI audio-preview), and later
+ * Hibi Toru funnels analysis (Claude), TTS (OpenAI audio-preview), and later
  * Whisper transcription through OpenRouter so the user only manages a
  * single API key. Each feature module imports the helpers here rather
  * than re-implementing auth.
@@ -11,8 +11,8 @@
  */
 
 export const OPENROUTER_BASE = 'https://openrouter.ai/api/v1';
-const APP_REFERER = 'https://pureyaa.app';
-const APP_TITLE = 'Pureyaa';
+const APP_REFERER = 'https://hibi-toru.app';
+const APP_TITLE = 'Hibi Toru';
 
 export function authHeaders(apiKey: string): Record<string, string> {
   return {

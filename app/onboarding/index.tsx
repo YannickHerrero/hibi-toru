@@ -76,7 +76,7 @@ export default function OnboardingScreen() {
 function Welcome({ onContinue }: { onContinue: () => void }) {
   return (
     <View style={styles.body}>
-      <Text style={styles.title}>Welcome to Pureyaa</Text>
+      <Text style={styles.title}>Welcome to Hibi Toru</Text>
       <Text style={styles.copy}>
         We&apos;ll grab the Japanese dictionaries you need (~25 MB) and then ask
         for your OpenRouter API key. One-time setup.
@@ -181,7 +181,7 @@ function ApiKey({ onDone }: { onDone: () => void }) {
       <View style={styles.body}>
         <Text style={styles.title}>OpenRouter API key</Text>
         <Text style={styles.copy}>
-          Pureyaa uses OpenRouter to call Claude (translation), Whisper
+          Hibi Toru uses OpenRouter to call Claude (translation), Whisper
           (subtitles), and OpenAI TTS through a single key. Create one at
           openrouter.ai/keys — you can also add it later in Settings.
         </Text>

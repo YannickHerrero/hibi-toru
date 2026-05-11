@@ -1,7 +1,7 @@
 /**
  * WaniKani v2 API client.
  *
- * Pureyaa only reads the kanji subjects (and /user as a key sanity check),
+ * Hibi Toru only reads the kanji subjects (and /user as a key sanity check),
  * so this is a tiny wrapper over fetch — no SDK, no caching here. The
  * caller decides what to persist.
  *
