@@ -16,7 +16,7 @@ import { FileAccess } from 'file-access';
 import * as NavigationBar from 'expo-navigation-bar';
 import { setStatusBarHidden } from 'expo-status-bar';
 import { VideoView, useVideoPlayer } from 'expo-video';
-import { usePlayerData } from '@/player/playerStore';
+import { usePlayerData, type PlayerData } from '@/player/playerStore';
 import { SubtitlePane } from '@/player/SubtitlePane';
 import { DictPopup } from '@/player/DictPopup';
 import { Controls } from '@/player/Controls';
@@ -178,7 +178,7 @@ function Player({
   data,
   initialCueIndex,
 }: {
-  data: ReturnType<typeof usePlayerData> extends infer R ? Extract<R, { state: 'ready' }>['data'] : never;
+  data: PlayerData;
   initialCueIndex: number | null;
 }) {
   const { width: screenWidth } = useWindowDimensions();
