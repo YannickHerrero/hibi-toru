@@ -8,7 +8,8 @@
  */
 
 import { useEffect, useRef, useState } from 'react';
-import { Animated, Platform, StyleSheet, Text, ToastAndroid, View } from 'react-native';
+import { Animated, Platform, Text, ToastAndroid, View } from 'react-native';
+import { StyleSheet } from 'react-native-unistyles';
 
 type Listener = (message: string) => void;
 const listeners = new Set<Listener>();
@@ -64,7 +65,7 @@ export function ToastHost() {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = StyleSheet.create((theme) => ({
   wrap: {
     position: 'absolute',
     left: 0,
@@ -73,11 +74,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   pill: {
-    backgroundColor: 'rgba(0, 0, 0, 0.85)',
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderRadius: 999,
+    backgroundColor: theme.colors.ink,
+    paddingHorizontal: theme.space.s4,
+    paddingVertical: theme.space.s2,
+    borderRadius: theme.radii.pill,
     maxWidth: '85%',
   },
-  text: { color: '#fff', fontSize: 14 },
-});
+  text: {
+    color: theme.colors.paper,
+    fontSize: theme.typography.meta,
+    fontFamily: theme.fonts.sans,
+  },
+}));
