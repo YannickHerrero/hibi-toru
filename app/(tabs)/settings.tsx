@@ -2,13 +2,13 @@ import { useEffect, useState } from 'react';
 import {
   View,
   Text,
-  StyleSheet,
   TextInput,
   Pressable,
   ScrollView,
   Switch,
   ActivityIndicator,
 } from 'react-native';
+import { StyleSheet } from 'react-native-unistyles';
 import type { AppSettings, SubtitleMode } from '@/types';
 import { DEFAULT_SETTINGS } from '@/types';
 import {
@@ -439,46 +439,77 @@ function formatRelative(iso: string): string {
   return months === 1 ? '1 month ago' : `${months} months ago`;
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#000' },
-  content: { padding: 16, gap: 24 },
-  loading: { flex: 1, backgroundColor: '#000', alignItems: 'center', justifyContent: 'center' },
-  section: { gap: 8 },
-  sectionTitle: { color: '#fff', fontSize: 18, fontWeight: '600', marginBottom: 4 },
-  label: { color: '#aaa', fontSize: 13, marginTop: 8 },
-  input: {
-    backgroundColor: '#181818',
-    color: '#fff',
-    borderRadius: 6,
-    padding: 12,
-    fontSize: 15,
+const styles = StyleSheet.create((theme) => ({
+  container: { flex: 1, backgroundColor: theme.colors.paper },
+  content: { padding: theme.space.s4, gap: theme.space.s6 },
+  loading: {
+    flex: 1,
+    backgroundColor: theme.colors.paper,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  row: { flexDirection: 'row', gap: 8, marginTop: 8 },
+  section: { gap: theme.space.s2 },
+  sectionTitle: {
+    color: theme.colors.ink,
+    fontSize: theme.typography.display.sm,
+    fontFamily: theme.fonts.sansSemiBold,
+    marginBottom: theme.space.s1,
+  },
+  label: {
+    color: theme.colors.inkSoft,
+    fontSize: theme.typography.meta,
+    marginTop: theme.space.s2,
+    fontFamily: theme.fonts.sansMedium,
+  },
+  input: {
+    backgroundColor: theme.colors.paperAlt,
+    color: theme.colors.ink,
+    borderRadius: theme.radii.sm,
+    padding: theme.space.s3,
+    fontSize: theme.typography.bodySm,
+    fontFamily: theme.fonts.sans,
+  },
+  row: { flexDirection: 'row', gap: theme.space.s2, marginTop: theme.space.s2 },
   button: {
-    backgroundColor: '#222',
-    paddingVertical: 10,
-    paddingHorizontal: 16,
-    borderRadius: 6,
+    backgroundColor: theme.colors.ink,
+    paddingVertical: theme.space.s2,
+    paddingHorizontal: theme.space.s4,
+    borderRadius: theme.radii.sm,
   },
   buttonDisabled: { opacity: 0.5 },
-  buttonText: { color: '#fff', fontWeight: '500' },
-  testResult: { marginTop: 8, fontSize: 13 },
-  ok: { color: '#4ade80' },
-  bad: { color: '#f87171' },
-  choiceRow: { flexDirection: 'row', gap: 8, marginTop: 4, flexWrap: 'wrap' },
-  choice: {
-    backgroundColor: '#181818',
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 6,
+  buttonText: { color: theme.colors.paper, fontFamily: theme.fonts.sansSemiBold },
+  testResult: { marginTop: theme.space.s2, fontSize: theme.typography.meta },
+  ok: { color: theme.colors.accent },
+  bad: { color: '#c0392b' },
+  choiceRow: {
+    flexDirection: 'row',
+    gap: theme.space.s2,
+    marginTop: theme.space.s1,
+    flexWrap: 'wrap',
   },
-  choiceActive: { backgroundColor: '#3b82f6' },
-  choiceText: { color: '#fff', textTransform: 'capitalize' },
+  choice: {
+    backgroundColor: theme.colors.paperAlt,
+    paddingHorizontal: theme.space.s3,
+    paddingVertical: theme.space.s2,
+    borderRadius: theme.radii.sm,
+  },
+  choiceActive: { backgroundColor: theme.colors.accent },
+  choiceText: {
+    color: theme.colors.ink,
+    textTransform: 'capitalize',
+    fontFamily: theme.fonts.sans,
+  },
   toggleRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingVertical: 8,
+    paddingVertical: theme.space.s2,
   },
-  toggleLabel: { color: '#fff', fontSize: 15, flex: 1, marginRight: 12 },
-});
+  toggleLabel: {
+    color: theme.colors.ink,
+    fontSize: theme.typography.bodySm,
+    flex: 1,
+    marginRight: theme.space.s3,
+    fontFamily: theme.fonts.sans,
+  },
+}));
