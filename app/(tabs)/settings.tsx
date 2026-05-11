@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -9,10 +9,8 @@ import {
   Switch,
   ActivityIndicator,
 } from 'react-native';
-import { Directory, File, Paths } from 'expo-file-system';
-import { useVideoPlayer, VideoView } from 'expo-video';
-import type { AnkiSettings, AppSettings, AudioMode, SubtitleMode } from '@/types';
-import { DEFAULT_ANKI_SETTINGS, DEFAULT_SETTINGS, TTS_VOICES } from '@/types';
+import type { AppSettings, SubtitleMode } from '@/types';
+import { DEFAULT_SETTINGS } from '@/types';
 import {
   getSettings,
   saveSettings,
@@ -23,27 +21,14 @@ import {
   setWanikaniApiKey,
   clearWanikaniApiKey,
 } from '@/storage/settings';
-import { getAnkiSettings, saveAnkiSettings } from '@/storage/ankiSettings';
 import { testOpenRouterApiKey } from '@/openrouter/client';
-import { AnkiClient } from '@/anki/client';
-import { synthesizeJapanese } from '@/anki/tts';
 import { fetchAllWanikaniKanji, testWanikaniApiKey } from '@/wanikani/api';
-import { ANKI_AVAILABLE } from '@/featureFlags';
 import {
   clearKanjiCache,
   getKanjiCacheStats,
   saveKanjiCache,
   type KanjiCacheStats,
 } from '@/wanikani/cache';
-
-const VOICE_PREVIEW_TEXT = '今日はいい天気ですね。';
-
-function base64ToBytes(b64: string): Uint8Array {
-  const binary = atob(b64);
-  const bytes = new Uint8Array(binary.length);
-  for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
-  return bytes;
-}
 
 const SUB_MODES: SubtitleMode[] = ['jp', 'jp+en', 'en'];
 
@@ -55,19 +40,11 @@ const MODE_LABELS: Record<SubtitleMode, string> = {
 
 export default function SettingsScreen() {
   const [settings, setSettings] = useState<AppSettings>(DEFAULT_SETTINGS);
-  const [anki, setAnki] = useState<AnkiSettings>(DEFAULT_ANKI_SETTINGS);
   const [apiKey, setApiKeyState] = useState<string>('');
   const [keyDirty, setKeyDirty] = useState(false);
   const [testing, setTesting] = useState(false);
   const [testResult, setTestResult] = useState<{ ok: boolean; message: string } | null>(null);
   const [loaded, setLoaded] = useState(false);
-  const [previewLoadingVoice, setPreviewLoadingVoice] = useState<string | null>(null);
-  const previewCacheRef = useRef<Map<string, string>>(new Map());
-  const [previewUri, setPreviewUri] = useState<string | null>(null);
-  const previewPlayer = useVideoPlayer(previewUri, (p) => {
-    p.loop = false;
-    p.muted = false;
-  });
   const [wkKey, setWkKey] = useState<string>('');
   const [wkSyncing, setWkSyncing] = useState(false);
   const [wkProgress, setWkProgress] = useState<{ done: number; total: number } | null>(null);
@@ -76,15 +53,13 @@ export default function SettingsScreen() {
 
   useEffect(() => {
     (async () => {
-      const [s, a, k, w, ws] = await Promise.all([
+      const [s, k, w, ws] = await Promise.all([
         getSettings(),
-        getAnkiSettings(),
         getOpenRouterApiKey(),
         getWanikaniApiKey(),
         getKanjiCacheStats(),
       ]);
       setSettings(s);
-      setAnki(a);
       setApiKeyState(k ?? '');
       setWkKey(w ?? '');
       setWkStats(ws);
@@ -124,51 +99,6 @@ export default function SettingsScreen() {
     }
   };
 
-  const playVoicePreview = async (voiceId: string) => {
-    const key = apiKey.trim();
-    if (!key) return; // need a key to synthesize
-
-    let uri = previewCacheRef.current.get(voiceId);
-    if (!uri) {
-      setPreviewLoadingVoice(voiceId);
-      try {
-        const tts = await synthesizeJapanese({
-          text: VOICE_PREVIEW_TEXT,
-          voiceName: voiceId,
-          apiKey: key,
-          outputId: `preview_${voiceId}`,
-        });
-        const cacheDir = new Directory(Paths.cache, 'tts-preview');
-        if (!cacheDir.exists) cacheDir.create({ intermediates: true });
-        const file = new File(cacheDir, tts.filename);
-        if (file.exists) file.delete();
-        file.write(base64ToBytes(tts.base64));
-        uri = file.uri;
-        previewCacheRef.current.set(voiceId, uri);
-      } catch (e) {
-        setTestResult({ ok: false, message: (e as Error).message });
-        return;
-      } finally {
-        setPreviewLoadingVoice(null);
-      }
-    }
-
-    try {
-      previewPlayer.pause();
-      previewPlayer.replace({ uri });
-      previewPlayer.currentTime = 0;
-      previewPlayer.play();
-    } catch {
-      // ignore — playback errors don't need to be surfaced
-    }
-  };
-
-  const updateAnki = async (patch: Partial<AnkiSettings>) => {
-    const next = { ...anki, ...patch };
-    setAnki(next);
-    await saveAnkiSettings(next);
-  };
-
   const onSyncWanikani = async () => {
     const trimmed = wkKey.trim();
     if (trimmed.length === 0) {
@@ -199,44 +129,6 @@ export default function SettingsScreen() {
     } finally {
       setWkSyncing(false);
       setWkProgress(null);
-    }
-  };
-
-  const [ankiTesting, setAnkiTesting] = useState(false);
-  const [ankiResult, setAnkiResult] = useState<{ ok: boolean; message: string } | null>(null);
-  const onConnectAnki = async () => {
-    setAnkiTesting(true);
-    setAnkiResult(null);
-    try {
-      if (!AnkiClient.isAvailable()) {
-        setAnkiResult({
-          ok: false,
-          message: 'AnkiDroid is not installed. Install it from the Play Store first.',
-        });
-        return;
-      }
-      let granted = await AnkiClient.hasPermission();
-      if (!granted) {
-        granted = await AnkiClient.requestPermission();
-      }
-      if (!granted) {
-        setAnkiResult({
-          ok: false,
-          message: 'Permission denied. Tap Connect again and accept the prompt.',
-        });
-        return;
-      }
-      // Install the custom note type and ensure the deck (idempotent).
-      await AnkiClient.ensurePureyaaModel();
-      await AnkiClient.ensureDeck(anki.defaultDeckName);
-      setAnkiResult({
-        ok: true,
-        message: `Connected. Deck "${anki.defaultDeckName}" + Pureyaa Sentence model ready.`,
-      });
-    } catch (e) {
-      setAnkiResult({ ok: false, message: (e as Error).message });
-    } finally {
-      setAnkiTesting(false);
     }
   };
 
@@ -294,95 +186,6 @@ export default function SettingsScreen() {
           </Text>
         )}
       </Section>
-
-      {ANKI_AVAILABLE && (
-        <Section title="Anki">
-          <Label>Audio source</Label>
-        <View style={styles.choiceRow}>
-          {(['original', 'tts', 'none'] as AudioMode[]).map((m) => (
-            <Pressable
-              key={m}
-              style={[styles.choice, anki.audioMode === m && styles.choiceActive]}
-              onPress={() => updateAnki({ audioMode: m })}
-            >
-              <Text style={styles.choiceText}>
-                {m === 'original' ? 'Original' : m === 'tts' ? 'TTS' : 'None'}
-              </Text>
-            </Pressable>
-          ))}
-        </View>
-
-        {anki.audioMode === 'tts' && (
-          <View style={styles.ttsBlock}>
-            <Label>TTS voice (tap to preview)</Label>
-            <View style={styles.choiceRow}>
-              {TTS_VOICES.map((v) => (
-                <Pressable
-                  key={v.id}
-                  style={[styles.choice, anki.ttsVoice === v.id && styles.choiceActive]}
-                  onPress={async () => {
-                    await updateAnki({ ttsVoice: v.id });
-                    await playVoicePreview(v.id);
-                  }}
-                >
-                  <View style={styles.choiceInner}>
-                    <Text style={styles.choiceText}>{v.label}</Text>
-                    {previewLoadingVoice === v.id && (
-                      <ActivityIndicator color="#fff" size="small" />
-                    )}
-                  </View>
-                </Pressable>
-              ))}
-            </View>
-            {/* Hidden VideoView is needed so the player can drive audio output */}
-            <VideoView player={previewPlayer} style={styles.hiddenPlayer} contentFit="contain" />
-          </View>
-        )}
-
-        <Label>Default deck</Label>
-        <TextInput
-          value={anki.defaultDeckName}
-          onChangeText={(t) => updateAnki({ defaultDeckName: t })}
-          style={styles.input}
-          autoCapitalize="none"
-          autoCorrect={false}
-        />
-
-        <Label>Audio padding before (ms)</Label>
-        <TextInput
-          value={String(anki.audioPaddingBeforeMs)}
-          onChangeText={(t) => updateAnki({ audioPaddingBeforeMs: parsePositiveInt(t) })}
-          style={styles.input}
-          keyboardType="number-pad"
-        />
-
-        <Label>Audio padding after (ms)</Label>
-        <TextInput
-          value={String(anki.audioPaddingAfterMs)}
-          onChangeText={(t) => updateAnki({ audioPaddingAfterMs: parsePositiveInt(t) })}
-          style={styles.input}
-          keyboardType="number-pad"
-        />
-
-        <View style={styles.row}>
-          <Pressable
-            style={[styles.button, ankiTesting && styles.buttonDisabled]}
-            disabled={ankiTesting}
-            onPress={onConnectAnki}
-          >
-            <Text style={styles.buttonText}>
-              {ankiTesting ? 'Connecting…' : 'Connect AnkiDroid'}
-            </Text>
-          </Pressable>
-        </View>
-        {ankiResult && (
-          <Text style={[styles.testResult, ankiResult.ok ? styles.ok : styles.bad]}>
-            {ankiResult.ok ? '✓ ' : '✗ '}
-            {ankiResult.message}
-          </Text>
-        )}
-        </Section>
-      )}
 
       <Section title="WaniKani (kanji info on cards)">
         <Label>Personal access token</Label>
@@ -469,11 +272,6 @@ function Label({ children }: { children: React.ReactNode }) {
   return <Text style={styles.label}>{children}</Text>;
 }
 
-function parsePositiveInt(s: string): number {
-  const n = parseInt(s.replace(/\D/g, ''), 10);
-  return Number.isFinite(n) && n >= 0 ? n : 0;
-}
-
 function formatRelative(iso: string): string {
   const diffMs = Date.now() - new Date(iso).getTime();
   const days = Math.floor(diffMs / (1000 * 60 * 60 * 24));
@@ -526,7 +324,4 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
   },
   toggleLabel: { color: '#fff', fontSize: 15, flex: 1, marginRight: 12 },
-  ttsBlock: { gap: 8, paddingLeft: 8, borderLeftWidth: 2, borderLeftColor: '#1f2937' },
-  choiceInner: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  hiddenPlayer: { width: 0, height: 0 },
 });

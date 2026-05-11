@@ -2,7 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as SecureStore from 'expo-secure-store';
 import type { AppSettings } from '@/types';
 import { DEFAULT_SETTINGS } from '@/types';
-import { LEGACY_SECURE_KEYS, SECURE_KEYS, STORAGE_KEYS } from './keys';
+import { SECURE_KEYS, STORAGE_KEYS } from './keys';
 
 export async function getSettings(): Promise<AppSettings> {
   const raw = await AsyncStorage.getItem(STORAGE_KEYS.settings);
@@ -28,16 +28,6 @@ export async function getOpenRouterApiKey(): Promise<string | null> {
 
 export async function setOpenRouterApiKey(key: string): Promise<void> {
   await SecureStore.setItemAsync(SECURE_KEYS.openrouterApiKey, key);
-  // Belt-and-suspenders: every save also clears any leftover keys from
-  // the previous multi-provider setup. Cheap, idempotent, no-op when
-  // already gone.
-  for (const legacy of LEGACY_SECURE_KEYS) {
-    try {
-      await SecureStore.deleteItemAsync(legacy);
-    } catch {
-      // Slot doesn't exist — fine.
-    }
-  }
 }
 
 export async function clearOpenRouterApiKey(): Promise<void> {

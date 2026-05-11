@@ -9,7 +9,6 @@ import {
   useWindowDimensions,
 } from 'react-native';
 import { showToast } from '@/ui/Toast';
-import { ANKI_AVAILABLE } from '@/featureFlags';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import * as ScreenOrientation from 'expo-screen-orientation';
 import * as DocumentPicker from 'expo-document-picker';
@@ -22,15 +21,13 @@ import { SubtitlePane } from '@/player/SubtitlePane';
 import { DictPopup } from '@/player/DictPopup';
 import { Controls } from '@/player/Controls';
 import { RetimerModal } from '@/player/RetimerModal';
-import { AnkiPreviewSheet, type AnkiPreviewArgs } from '@/anki/AnkiPreviewSheet';
-import { getAnkiSettings } from '@/storage/ankiSettings';
 import { effectiveEndMs, findCueIndexAt } from '@/utils/time';
 import { getSettings } from '@/storage/settings';
 import { loadDictionaries } from '@/analysis/dict';
 import { deleteEntry, upsertEntry } from '@/storage/entries';
 import { uriExists } from '@/utils/uriCheck';
-import type { AnkiSettings, Cue, LibraryEntry, RetimerState, SubtitleMode } from '@/types';
-import { DEFAULT_ANKI_SETTINGS, DEFAULT_SETTINGS } from '@/types';
+import type { Cue, LibraryEntry, RetimerState, SubtitleMode } from '@/types';
+import { DEFAULT_SETTINGS } from '@/types';
 
 export default function PlayerScreen() {
   const { id, cueIndex } = useLocalSearchParams<{ id: string; cueIndex?: string }>();
@@ -228,8 +225,6 @@ function Player({
   const [retimerOpen, setRetimerOpen] = useState(false);
   const [retimer, setRetimer] = useState<RetimerState>(entry.retimerState);
   const [showControls, setShowControls] = useState(true);
-  const [ankiPreview, setAnkiPreview] = useState<AnkiPreviewArgs | null>(null);
-  const [ankiSettings, setAnkiSettings] = useState<AnkiSettings>(DEFAULT_ANKI_SETTINGS);
   const lastAutoPausedCueIndex = useRef<number>(-1);
   const lastProgressSavedAt = useRef<number>(0);
   const latestProgressRef = useRef<number>(entry.watchProgressPercent);
@@ -253,10 +248,9 @@ function Player({
 
   useEffect(() => {
     (async () => {
-      const [s, a] = await Promise.all([getSettings(), getAnkiSettings()]);
+      const s = await getSettings();
       setMode(s.defaultSubtitleMode);
       setAutoPause(s.autoPauseAtLineEnd);
-      setAnkiSettings(a);
       await loadDictionaries();
     })();
   }, []);
@@ -471,25 +465,7 @@ function Player({
         tokenIndex={popup?.tokenIndex ?? 0}
         sourceEntryId={entry.id}
         onClose={() => setPopup(null)}
-        onAddToAnki={
-          ANKI_AVAILABLE
-            ? (cue, dict, dictEntry, tokenSpan) => {
-                setPopup(null);
-                setAnkiPreview({ cue, dict, dictEntry, tokenSpan });
-              }
-            : undefined
-        }
       />
-      {ANKI_AVAILABLE && (
-        <AnkiPreviewSheet
-          visible={ankiPreview !== null}
-          args={ankiPreview}
-          entry={entry}
-          settings={ankiSettings}
-          onClose={() => setAnkiPreview(null)}
-          onSent={() => showToast('Card added to Anki')}
-        />
-      )}
     </View>
   );
 }

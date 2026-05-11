@@ -1,25 +1,15 @@
 export const STORAGE_KEYS = {
-  entries: 'pureyaa.entries.v1',
-  savedWords: 'pureyaa.savedWords.v1',
-  settings: 'pureyaa.settings.v1',
-  onboarded: 'pureyaa.onboarded.v1',
-  recentRetimers: 'pureyaa.recentRetimers.v1',
-  ankiSettings: 'pureyaa.ankiSettings.v1',
-  wanikaniKanjiCache: 'pureyaa.wanikaniKanjiCache.v1',
-  lastSeenUpdateId: 'pureyaa.lastSeenUpdateId.v1',
+  entries: 'hibi-toru.entries.v1',
+  savedWords: 'hibi-toru.savedWords.v1',
+  settings: 'hibi-toru.settings.v1',
+  onboarded: 'hibi-toru.onboarded.v1',
+  recentRetimers: 'hibi-toru.recentRetimers.v1',
+  wanikaniKanjiCache: 'hibi-toru.wanikaniKanjiCache.v1',
+  lastSeenUpdateId: 'hibi-toru.lastSeenUpdateId.v1',
 } as const;
 
 export const SECURE_KEYS = {
-  openrouterApiKey: 'pureyaa.openrouterApiKey',
-  wanikaniApiKey: 'pureyaa.wanikaniApiKey',
+  openrouterApiKey: 'hibi-toru.openrouterApiKey',
+  wanikaniApiKey: 'hibi-toru.wanikaniApiKey',
+  hibiApiKey: 'hibi-toru.hibiApiKey',
 } as const;
-
-/**
- * Old SecureStore slots from the multi-provider era. Cleared once when the
- * user saves their first OpenRouter key (see settings.ts) so the device
- * doesn't keep dead Anthropic / Google credentials around forever.
- */
-export const LEGACY_SECURE_KEYS = [
-  'pureyaa.anthropicApiKey',
-  'pureyaa.googleTtsApiKey',
-] as const;
