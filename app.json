@@ -47,7 +47,7 @@
     },
     "ios": {
       "bundleIdentifier": "com.hibi.toru",
-      "supportsTablet": false,
+      "supportsTablet": true,
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
         "UIFileSharingEnabled": true,
