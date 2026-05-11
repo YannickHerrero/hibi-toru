@@ -1,0 +1,53 @@
+{
+  "name": "pureyaa",
+  "version": "0.1.0",
+  "private": true,
+  "main": "expo-router/entry",
+  "scripts": {
+    "start": "expo start",
+    "android": "expo start --android",
+    "web": "expo start --web",
+    "typecheck": "tsc --noEmit",
+    "export:update": "expo export --platform ios --platform android --source-maps --dump-assetmap --no-bytecode --output-dir dist-update",
+    "update:staging": "pnpm export:update && eas update --skip-bundler --input-dir dist-update --branch staging --message",
+    "update:production": "pnpm export:update && eas update --skip-bundler --input-dir dist-update --branch production --message"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.32.1",
+    "@react-native-async-storage/async-storage": "2.2.0",
+    "anki-bridge": "file:./modules/anki-bridge",
+    "audio-extract": "file:./modules/audio-extract",
+    "file-access": "file:./modules/file-access",
+    "expo": "~55.0.18",
+    "expo-asset": "^55.0.16",
+    "expo-constants": "~55.0.15",
+    "expo-dev-client": "~55.0.28",
+    "expo-document-picker": "~55.0.13",
+    "expo-file-system": "~55.0.17",
+    "expo-image": "~55.0.9",
+    "expo-linking": "~55.0.14",
+    "expo-navigation-bar": "~55.0.12",
+    "expo-router": "~55.0.13",
+    "expo-screen-orientation": "~55.0.13",
+    "expo-secure-store": "~55.0.13",
+    "expo-status-bar": "~55.0.5",
+    "expo-updates": "~55.0.21",
+    "expo-video": "~55.0.15",
+    "expo-video-thumbnails": "~55.0.14",
+    "kuromoji-react-native": "^1.0.1",
+    "pako": "^2.1.0",
+    "react": "19.2.0",
+    "react-native": "0.83.6",
+    "react-native-gesture-handler": "~2.30.1",
+    "react-native-reanimated": "~4.2.1",
+    "react-native-safe-area-context": "5.6.2",
+    "react-native-screens": "~4.23.0",
+    "react-native-worklets": "0.7.4",
+    "uuid": "^11.0.3"
+  },
+  "devDependencies": {
+    "@types/pako": "^2.0.4",
+    "@types/react": "~19.2.14",
+    "typescript": "^5.9.3"
+  }
+}
