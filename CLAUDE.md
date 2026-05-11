@@ -1,26 +1,31 @@
-# Pureyaa — working notes for AI assistants
+# Hibi Toru — working notes for AI assistants
 
-Japanese language-learning app that mines anime subtitles into Anki cards.
-Android is the primary target; iOS is supported with one feature gap
-(Anki, see §3 and §7). Expo SDK 55, React Native 0.83, Hermes, New
+Japanese language-learning app that mines anime subtitles into cards
+in the Hibi ecosystem (FSRS-scheduled review via `hibi-client` against
+the Hibi backend). Android and iOS are both supported; iPad is
+enabled so the iOS build also installs on Apple Vision Pro via
+"Designed for iPad". Expo SDK 55, React Native 0.83, Hermes, New
 Architecture.
 
 ## 1. Working style for this repo
 
-- **Many small atomic commits — the more the better.** Each commit should
-  leave the tree compiling. Intermediate states with broken types are
-  acceptable only if the next commit fixes them and they land back-to-back.
+- **Many small atomic commits — the more the better.** Each commit
+  should leave the tree compiling. Intermediate states with broken
+  types are acceptable only if the next commit fixes them and they
+  land back-to-back.
 - **Always state JS-only vs requires-rebuild** when finishing a task.
-  EAS builds cost real money — the user needs to know whether to reload
-  the dev client or kick off a paid build.
+  EAS builds cost real money — the user needs to know whether to
+  reload the dev client or kick off a paid build. Anything that
+  touches `app.json`, `eas.json`, a `modules/*/` native source file,
+  or adds a dep with a native side requires a rebuild.
 - **Don't touch pre-existing diffs in the working tree** that weren't
   part of your task (e.g., random `eas.json` / `expo-env.d.ts`
   modifications already there at session start).
-- **Type-check before committing** with `npx tsc --noEmit`. Two known
-  pre-existing errors to filter from output:
-  - `app/player/[id].tsx` around line 177 — `usePlayerData` typing
-  - `kuromoji-react-native` missing declaration file
-  
+- **Type-check before committing** with `pnpm typecheck` (or
+  `npx tsc --noEmit` if node_modules is present). One known
+  pre-existing error to filter from output:
+  - `kuromoji-react-native` missing declaration file.
+
   Anything else is yours.
 
 ## 2. AI service architecture (single OpenRouter key)
@@ -29,10 +34,13 @@ Architecture.
   (`anthropic/claude-sonnet-4.5`), Whisper subtitle generation
   (`openai/whisper-large-v3-turbo`), and TTS
   (`openai/gpt-4o-audio-preview`). Stored in `expo-secure-store`
-  under `pureyaa.openrouterApiKey`.
+  under `hibi-toru.openrouterApiKey` (see `src/storage/keys.ts`
+  `SECURE_KEYS`).
 - **WaniKani is separate** (account-bound, kanji-only). Stored under
-  `pureyaa.wanikaniApiKey`. Bulk-fetched + cached locally on key save
-  so card creation is offline.
+  `hibi-toru.wanikaniApiKey`. Bulk-fetched + cached locally on key
+  save so card creation is offline.
+- **Hibi API key** is stored under `hibi-toru.hibiApiKey` and is
+  required for any mining action. See §3.
 - **OpenRouter API quirks** — partially OpenAI-compatible but diverges
   in two important places:
   - `/audio/transcriptions` is **not** multipart. It expects JSON with
@@ -47,51 +55,54 @@ Architecture.
     `modalities=['text','audio']`, `audio={voice, format:'mp3'}`.
     Audio comes back as base64 in `choices[0].message.audio.data`.
 
-## 3. Anki integration
+## 3. Hibi integration (mining cards)
 
-- **Direct AddContentApi via local Kotlin module** at
-  `modules/anki-bridge/`. JitPack dep
-  `com.github.ankidroid:Anki-Android:api-v1.1.0`. No HTTP, no
-  AnkiconnectAndroid (Play Protect kept uninstalling it).
-- **Note type lives in Kotlin** (`AnkiBridgeModule.kt` companion
-  object: `PUREYAA_FIELDS`, `PRODUCTION_FRONT`, `PRODUCTION_BACK`,
-  `PUREYAA_CSS`). `ensurePureyaaModel` only **installs** when missing —
-  it doesn't update.
-- **Workflow for template iteration**: edit templates/CSS in AnkiDroid
-  live (instant preview), then port back into `AnkiBridgeModule.kt`
-  so fresh installs get the right thing. Field schema is the one piece
-  you don't want to drift.
-- **11 fields must stay in lockstep across three files**:
-  1. `PUREYAA_FIELDS` array in `AnkiBridgeModule.kt`
-  2. `FIELD_ORDER` in `src/anki/send.ts`
-  3. The `fields` object in `src/anki/buildCard.ts`
-  
-  Order is positional, not by name. Adding/removing/renaming a field
-  requires touching all three or `addNote` will mismatch field count
-  and reject silently.
-- **AddContentApi gotchas** verified against the v1.1.0 Java source:
-  - `preferredName` must NOT include the file extension. The API
-    derives the extension from the URI's content type.
-  - `mimeType` must be the literal string `"audio"` or `"image"` —
-    not full MIME like `"image/jpeg"`. The provider does an
-    `equals()` check; anything else returns null and the bridge throws.
-  - Use the **returned reference string** from `addMediaFromUri` as
-    the card field value, not a hardcoded `<img src="filename">`.
-    AnkiDroid may rename for collisions.
+- **All card mining goes through `hibi-client`** against the Hibi
+  backend. There is no Anki integration anymore — the Anki-only
+  export path inherited from Pureyaa was removed in favour of the
+  cross-platform Hibi API. Anything that says "Anki" in scrollback
+  or memory is stale.
+- **Code lives under `src/hibi/`**:
+  - `hibiClient.ts` — `createHibiClient()` singleton against the API
+    key.
+  - `hibiApiKey.ts` — SecureStore wrapper around
+    `SECURE_KEYS.hibiApiKey`.
+  - `buildCard.ts` — assembles a `CreateCardInput` from a cue + dict
+    entry.
+  - `media.ts` — audio/thumbnail extraction wrappers (cross-platform).
+  - `furigana.ts` / `kanjiList.ts` — segmentation + kanji extraction.
+  - `HibiPreviewSheet.tsx` — editable preview before submission.
+  - `submit.ts` / `sync.ts` — `insertMinedCard` + `syncCard` /
+    `syncAllPending`.
+- **Local SQLite (`src/db/`)** tracks `mined_cards` sync state with
+  states `pending`/`syncing`/`synced`/`failed`. Failed rows can be
+  retried from Settings.
+- **No platform gating needed for mining.** Both Android and iOS run
+  the same Hibi flow end-to-end. There is no Android-only export path.
 
-## 4. SAF URI persistence
+## 4. SAF / security-scoped URI persistence
 
-- **`expo-document-picker` doesn't auto-persist** URIs. Without
-  persistence, every cold start invalidates the saved `videoUri` and
-  the entry shows "file unavailable".
-- **Every DocumentPicker that returns a content:// URI we plan to
-  keep** must be followed by `await AnkiBridge.persistUriPermission(uri)`
-  (the local Kotlin helper that wraps `takePersistableUriPermission`).
+- **Picker-returned URIs don't auto-persist.** Without persistence,
+  every cold start invalidates the saved `videoUri` and the entry
+  shows "file unavailable".
+- **Every DocumentPicker result we plan to keep** must be followed by
+  `await FileAccess.persistFileAccess(uri)` (see
+  `modules/file-access/`). The handle returned is what to store in
+  `entry.videoUri`:
+  - On Android the handle equals the URI string (wraps
+    `takePersistableUriPermission`).
+  - On iOS the handle is a base64 security-scoped bookmark blob.
 - **expo-router URL-encodes route params**, so URIs round-tripped
   through `router.push({ params })` come out the other side with
   slightly different encoding. The transient session grant tolerates
-  fuzzy matching but the persistent grant is exact-match. **Re-persist
-  on the receiving side** immediately before saving the entry.
+  fuzzy matching but the persistent grant is exact-match.
+  **Re-persist on the receiving side** immediately before saving the
+  entry.
+- **Reads must run inside a session.** Long-lived consumers (the
+  video player) own their own `beginSession` / `endSession` pair;
+  short-lived ones (thumbnail / audio extract) should use
+  `withSession()` from the file-access shim. No-op on Android,
+  scope-managed on iOS.
 
 ## 5. Media + time handling
 
@@ -101,50 +112,53 @@ Architecture.
   passing times to native extractors (`extractThumbnail`,
   `extractAudio`). Forgetting this puts media seconds off the spoken
   line whenever the user has any sync offset.
-- Native module `modules/audio-extract/` (Kotlin MediaExtractor +
-  MediaCodec): AAC remux fast path, Opus → ogg, anything else
-  transcodes to AAC. Drain-encoder-first pipeline order avoids
-  deadlocks; channelCount > 6 fails with a clear error before
-  `encoder.configure` would throw a generic one.
+- Native module `modules/audio-extract/` is cross-platform:
+  - Android (Kotlin MediaExtractor + MediaCodec): AAC remux fast
+    path, Opus → ogg, anything else transcodes to AAC. Drain-encoder-
+    first pipeline order avoids deadlocks; `channelCount > 6` fails
+    with a clear error before `encoder.configure` would throw a
+    generic one.
+  - iOS (`AVAssetExportSession`, AppleM4A preset): always re-encodes
+    to AAC inside an `.m4a` container regardless of source codec.
+    Trades the Kotlin module's codec fast-paths for simplicity — the
+    cost is negligible for typical file sizes.
 
-## 6. Cross-platform conventions (Android + iOS)
+## 6. Cross-platform conventions (Android + iOS / iPad / Vision Pro)
 
-- **`src/featureFlags.ts`** is the single-source-of-truth for
-  per-platform UI gating. `ANKI_AVAILABLE = Platform.OS === 'android'`
-  is the only flag right now. UI surfaces wrap their Anki-specific
-  blocks in `{ANKI_AVAILABLE && ...}`.
-- **`anki-bridge` and `audio-extract` JS shims** detect iOS via
-  `Platform.OS` and substitute proxies that throw clearly when methods
-  are called. `anki-bridge` has no iOS native module by design;
-  `audio-extract` does (Phase 3 of the iOS port).
-- **`file-access` is cross-platform** with platform-specific handle
-  formats: on Android the handle == the URI string; on iOS it's a
-  base64 security-scoped bookmark. Always wrap reads in `withSession()`
-  (no-op on Android, scope-managed on iOS).
-- **`uriExists` branches per-platform.** Android uses
-  `new File(uri).exists` directly; iOS resolves the bookmark via
-  `FileAccess.beginSession` first.
+- **No per-platform feature flags right now.** The feature surface
+  is identical across Android and iOS. Anything that used to live
+  behind `ANKI_AVAILABLE` is gone — don't reintroduce a
+  `src/featureFlags.ts` unless a genuinely platform-divergent feature
+  shows up.
+- **`audio-extract` and `file-access` are cross-platform** with
+  Kotlin + Swift native modules. JS shims live in each module's
+  `src/index.ts` and use `requireNativeModule` — no `Platform.OS`
+  branching needed in the shim itself.
+- **`file-access` handle format is platform-specific** but the JS
+  surface is uniform: on Android the handle == the URI string; on
+  iOS it's a base64 security-scoped bookmark. Always wrap reads in
+  `withSession()` (no-op on Android, scope-managed on iOS).
+- **`uriExists` (`src/utils/uriCheck.ts`) resolves via
+  `FileAccess.beginSession`** before probing, so it works for both
+  Android URIs and iOS bookmarks.
 - **Cross-platform toasts** via `src/ui/Toast.tsx` (`showToast()`).
   Backed by `ToastAndroid` on Android, an animated bottom pill via
   `<ToastHost />` on iOS. Don't import `ToastAndroid` directly.
+- **iPad / Vision Pro**: `app.json` has `ios.supportsTablet: true`,
+  which makes the iOS build run on iPad natively and on Apple Vision
+  Pro via the "Designed for iPad" compatibility layer. Root
+  orientation is still `portrait` — the app runs portrait-shaped in
+  a window on Vision Pro. Revisit if/when we do an iPad-native
+  layout pass.
 
 ## 7. Other project facts
 
-- **Anki integration is Android-only.** AnkiMobile on iOS only exposes
-  a URL scheme that doesn't accept inline media or programmatic note
-  types — too crippled for our note design. iOS users get analysis,
-  playback, dict popup, saved words, Whisper subtitle generation.
-  See §6 for how this is gated in code.
 - **Whisper track-picker for dual-audio rips is intentionally
   deferred.** Would need `listAudioTracks` methods (Kotlin and Swift)
   + a rebuild. Current behavior picks the first audio track, which
   works for monolingual rips. Symptom of the missing feature: a JP/EN
   dual audio file transcribes the dub.
-- **iOS audio-extract uses AVAssetExportSession** with the AppleM4A
-  preset — always re-encodes to AAC regardless of source codec. The
-  Kotlin module has codec-specific fast paths (AAC remux, Opus → ogg);
-  the Swift module trades that complexity for simplicity since the
-  cost is negligible for our typical file sizes.
 - **Hermes property limit (196k)**: the dict bundle uses `Map<>` at
-  runtime; the on-disk format is array-of-pairs to avoid the per-object
-  property cap. Don't switch to plain object literals for large maps.
+  runtime; the on-disk format is array-of-pairs to avoid the
+  per-object property cap. Don't switch to plain object literals for
+  large maps.
