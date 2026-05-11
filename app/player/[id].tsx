@@ -26,6 +26,8 @@ import { getSettings } from '@/storage/settings';
 import { loadDictionaries } from '@/analysis/dict';
 import { deleteEntry, upsertEntry } from '@/storage/entries';
 import { uriExists } from '@/utils/uriCheck';
+import { HibiPreviewSheet, type HibiPreviewArgs } from '@/hibi/HibiPreviewSheet';
+import { submitMinedCard } from '@/hibi/submit';
 import type { Cue, LibraryEntry, RetimerState, SubtitleMode } from '@/types';
 import { DEFAULT_SETTINGS } from '@/types';
 
@@ -225,6 +227,7 @@ function Player({
   const [retimerOpen, setRetimerOpen] = useState(false);
   const [retimer, setRetimer] = useState<RetimerState>(entry.retimerState);
   const [showControls, setShowControls] = useState(true);
+  const [minePreview, setMinePreview] = useState<HibiPreviewArgs | null>(null);
   const lastAutoPausedCueIndex = useRef<number>(-1);
   const lastProgressSavedAt = useRef<number>(0);
   const latestProgressRef = useRef<number>(entry.watchProgressPercent);
@@ -465,6 +468,19 @@ function Player({
         tokenIndex={popup?.tokenIndex ?? 0}
         sourceEntryId={entry.id}
         onClose={() => setPopup(null)}
+        onMine={(cue, dict, dictEntry, tokenSpan) => {
+          setPopup(null);
+          player.pause();
+          setMinePreview({ cue, dict, dictEntry, tokenSpan });
+        }}
+      />
+      <HibiPreviewSheet
+        visible={minePreview !== null}
+        args={minePreview}
+        entry={entry}
+        onClose={() => setMinePreview(null)}
+        onSubmit={submitMinedCard}
+        onSent={() => showToast('Card sent to Hibi')}
       />
     </View>
   );

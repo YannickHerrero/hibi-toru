@@ -10,7 +10,7 @@ export interface MinedCardRow {
   sentenceEn: string | null;
   glosses: string[];
   grammarNote: string | null;
-  kanjiList: { kanji: string; meaning: string | null; wanikaniLevel: number | null }[];
+  kanjiList: { kanji: string; meaning: string; wanikaniLevel: number | null }[];
   furigana: { base: string; reading: string }[];
   tags: string[];
   audioUri: string | null;
