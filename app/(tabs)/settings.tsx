@@ -26,6 +26,7 @@ import { getHibiApiKey, setHibiApiKey, clearHibiApiKey } from '@/hibi/hibiApiKey
 import { getHibiClient } from '@/hibi/hibiClient';
 import { syncAllPending } from '@/hibi/sync';
 import { listPendingMinedCards } from '@/db/minedCards';
+import { useThemeSwitcher } from '@/theme';
 import { fetchAllWanikaniKanji, testWanikaniApiKey } from '@/wanikani/api';
 import {
   clearKanjiCache,
@@ -43,6 +44,7 @@ const MODE_LABELS: Record<SubtitleMode, string> = {
 };
 
 export default function SettingsScreen() {
+  const { theme, setTheme, available } = useThemeSwitcher();
   const [settings, setSettings] = useState<AppSettings>(DEFAULT_SETTINGS);
   const [apiKey, setApiKeyState] = useState<string>('');
   const [keyDirty, setKeyDirty] = useState(false);
@@ -372,6 +374,21 @@ export default function SettingsScreen() {
             {wkResult.message}
           </Text>
         )}
+      </Section>
+
+      <Section title="Theme">
+        <Label>Pick a palette</Label>
+        <View style={styles.choiceRow}>
+          {available.map((name) => (
+            <Pressable
+              key={name}
+              style={[styles.choice, theme === name && styles.choiceActive]}
+              onPress={() => setTheme(name)}
+            >
+              <Text style={styles.choiceText}>{name}</Text>
+            </Pressable>
+          ))}
+        </View>
       </Section>
 
       <Section title="Playback">
