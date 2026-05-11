@@ -10,6 +10,9 @@ import { STORAGE_KEYS } from '@/storage/keys';
 import { showToast, ToastHost } from '@/ui/Toast';
 import '@/theme/unistyles';
 import { hydrateTheme, useAppFonts } from '@/theme';
+import { getDb } from '@/db/client';
+import { runMigrations } from '@/db/migrations';
+import { useState } from 'react';
 
 /**
  * Show a toast the first time we boot into a freshly-applied OTA update.
@@ -37,10 +40,24 @@ export default function RootLayout() {
   const router = useRouter();
   const segments = useSegments();
   const [fontsLoaded] = useAppFonts();
+  const [dbReady, setDbReady] = useState(false);
   useOtaUpdateToast();
 
   useEffect(() => {
     hydrateTheme().catch((err) => console.warn('hydrateTheme failed', err));
+  }, []);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const db = await getDb();
+        await runMigrations(db);
+      } catch (err) {
+        console.warn('runMigrations failed', err);
+      } finally {
+        setDbReady(true);
+      }
+    })();
   }, []);
 
   useEffect(() => {
@@ -55,7 +72,7 @@ export default function RootLayout() {
     })();
   }, [segments, router]);
 
-  if (!fontsLoaded) return null;
+  if (!fontsLoaded || !dbReady) return null;
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
