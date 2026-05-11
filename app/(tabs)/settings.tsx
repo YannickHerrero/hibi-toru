@@ -24,6 +24,8 @@ import {
 import { testOpenRouterApiKey } from '@/openrouter/client';
 import { getHibiApiKey, setHibiApiKey, clearHibiApiKey } from '@/hibi/hibiApiKey';
 import { getHibiClient } from '@/hibi/hibiClient';
+import { syncAllPending } from '@/hibi/sync';
+import { listPendingMinedCards } from '@/db/minedCards';
 import { fetchAllWanikaniKanji, testWanikaniApiKey } from '@/wanikani/api';
 import {
   clearKanjiCache,
@@ -56,6 +58,9 @@ export default function SettingsScreen() {
   const [hibiKeyDirty, setHibiKeyDirty] = useState(false);
   const [hibiTesting, setHibiTesting] = useState(false);
   const [hibiResult, setHibiResult] = useState<{ ok: boolean; message: string } | null>(null);
+  const [pendingCount, setPendingCount] = useState<number | null>(null);
+  const [retrying, setRetrying] = useState(false);
+  const [retryResult, setRetryResult] = useState<{ ok: boolean; message: string } | null>(null);
 
   useEffect(() => {
     (async () => {
@@ -71,6 +76,12 @@ export default function SettingsScreen() {
       setWkKey(w ?? '');
       setWkStats(ws);
       setHibiKey(hk ?? '');
+      try {
+        const pending = await listPendingMinedCards();
+        setPendingCount(pending.length);
+      } catch {
+        setPendingCount(0);
+      }
       setLoaded(true);
     })();
   }, []);
@@ -178,6 +189,27 @@ export default function SettingsScreen() {
     }
   };
 
+  const onRetrySync = async () => {
+    setRetrying(true);
+    setRetryResult(null);
+    try {
+      const res = await syncAllPending();
+      setRetryResult({
+        ok: res.failed === 0,
+        message:
+          res.total === 0
+            ? 'Nothing to sync.'
+            : `Synced ${res.ok}/${res.total}` + (res.failed > 0 ? ` (${res.failed} failed)` : ''),
+      });
+      const pending = await listPendingMinedCards();
+      setPendingCount(pending.length);
+    } catch (e) {
+      setRetryResult({ ok: false, message: (e as Error).message });
+    } finally {
+      setRetrying(false);
+    }
+  };
+
   const update = async (patch: Partial<AppSettings>) => {
     const next = { ...settings, ...patch };
     setSettings(next);
@@ -269,6 +301,28 @@ export default function SettingsScreen() {
           <Text style={[styles.testResult, hibiResult.ok ? styles.ok : styles.bad]}>
             {hibiResult.ok ? '✓ ' : '✗ '}
             {hibiResult.message}
+          </Text>
+        )}
+        <Label>
+          {pendingCount === null
+            ? ' '
+            : pendingCount === 0
+              ? 'No cards waiting to sync.'
+              : `${pendingCount} card${pendingCount === 1 ? '' : 's'} waiting to sync.`}
+        </Label>
+        <View style={styles.row}>
+          <Pressable
+            style={[styles.button, (retrying || (pendingCount ?? 0) === 0) && styles.buttonDisabled]}
+            disabled={retrying || (pendingCount ?? 0) === 0}
+            onPress={onRetrySync}
+          >
+            <Text style={styles.buttonText}>{retrying ? 'Syncing…' : 'Retry pending syncs'}</Text>
+          </Pressable>
+        </View>
+        {retryResult && (
+          <Text style={[styles.testResult, retryResult.ok ? styles.ok : styles.bad]}>
+            {retryResult.ok ? '✓ ' : '✗ '}
+            {retryResult.message}
           </Text>
         )}
       </Section>
