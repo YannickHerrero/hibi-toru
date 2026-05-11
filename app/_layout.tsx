@@ -8,6 +8,8 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { isOnboarded } from '@/onboarding/state';
 import { STORAGE_KEYS } from '@/storage/keys';
 import { showToast, ToastHost } from '@/ui/Toast';
+import '@/theme/unistyles';
+import { hydrateTheme, useAppFonts } from '@/theme';
 
 /**
  * Show a toast the first time we boot into a freshly-applied OTA update.
@@ -34,7 +36,12 @@ function useOtaUpdateToast() {
 export default function RootLayout() {
   const router = useRouter();
   const segments = useSegments();
+  const [fontsLoaded] = useAppFonts();
   useOtaUpdateToast();
+
+  useEffect(() => {
+    hydrateTheme().catch((err) => console.warn('hydrateTheme failed', err));
+  }, []);
 
   useEffect(() => {
     (async () => {
@@ -47,6 +54,8 @@ export default function RootLayout() {
       }
     })();
   }, [segments, router]);
+
+  if (!fontsLoaded) return null;
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
