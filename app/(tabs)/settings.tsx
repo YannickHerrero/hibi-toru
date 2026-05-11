@@ -22,6 +22,8 @@ import {
   clearWanikaniApiKey,
 } from '@/storage/settings';
 import { testOpenRouterApiKey } from '@/openrouter/client';
+import { getHibiApiKey, setHibiApiKey, clearHibiApiKey } from '@/hibi/hibiApiKey';
+import { getHibiClient } from '@/hibi/hibiClient';
 import { fetchAllWanikaniKanji, testWanikaniApiKey } from '@/wanikani/api';
 import {
   clearKanjiCache,
@@ -50,19 +52,25 @@ export default function SettingsScreen() {
   const [wkProgress, setWkProgress] = useState<{ done: number; total: number } | null>(null);
   const [wkResult, setWkResult] = useState<{ ok: boolean; message: string } | null>(null);
   const [wkStats, setWkStats] = useState<KanjiCacheStats | null>(null);
+  const [hibiKey, setHibiKey] = useState<string>('');
+  const [hibiKeyDirty, setHibiKeyDirty] = useState(false);
+  const [hibiTesting, setHibiTesting] = useState(false);
+  const [hibiResult, setHibiResult] = useState<{ ok: boolean; message: string } | null>(null);
 
   useEffect(() => {
     (async () => {
-      const [s, k, w, ws] = await Promise.all([
+      const [s, k, w, ws, hk] = await Promise.all([
         getSettings(),
         getOpenRouterApiKey(),
         getWanikaniApiKey(),
         getKanjiCacheStats(),
+        getHibiApiKey(),
       ]);
       setSettings(s);
       setApiKeyState(k ?? '');
       setWkKey(w ?? '');
       setWkStats(ws);
+      setHibiKey(hk ?? '');
       setLoaded(true);
     })();
   }, []);
@@ -132,6 +140,44 @@ export default function SettingsScreen() {
     }
   };
 
+  const onSaveHibiKey = async () => {
+    const trimmed = hibiKey.trim();
+    if (trimmed.length === 0) {
+      await clearHibiApiKey();
+    } else {
+      await setHibiApiKey(trimmed);
+    }
+    setHibiKeyDirty(false);
+    setHibiResult(null);
+  };
+
+  const onTestHibi = async () => {
+    setHibiTesting(true);
+    setHibiResult(null);
+    try {
+      const trimmed = hibiKey.trim();
+      if (trimmed.length === 0) {
+        setHibiResult({ ok: false, message: 'Paste your Hibi API key first.' });
+        return;
+      }
+      if (hibiKeyDirty) await setHibiApiKey(trimmed);
+      setHibiKeyDirty(false);
+      const client = await getHibiClient();
+      if (!client) throw new Error('Client could not be initialized.');
+      // Use the cards list endpoint as a cheap auth probe.
+      const res = await client.cards.list({ limit: 1 });
+      const count = res.items.length;
+      setHibiResult({
+        ok: true,
+        message: `Connected — ${count > 0 ? 'cards present on server.' : 'no cards yet.'}`,
+      });
+    } catch (e) {
+      setHibiResult({ ok: false, message: (e as Error).message });
+    } finally {
+      setHibiTesting(false);
+    }
+  };
+
   const update = async (patch: Partial<AppSettings>) => {
     const next = { ...settings, ...patch };
     setSettings(next);
@@ -183,6 +229,46 @@ export default function SettingsScreen() {
           <Text style={[styles.testResult, testResult.ok ? styles.ok : styles.bad]}>
             {testResult.ok ? '✓ ' : '✗ '}
             {testResult.message}
+          </Text>
+        )}
+      </Section>
+
+      <Section title="Hibi API key">
+        <Label>Mined cards sync to hibi-api.vercel.app</Label>
+        <TextInput
+          value={hibiKey}
+          onChangeText={(t) => {
+            setHibiKey(t);
+            setHibiKeyDirty(true);
+            setHibiResult(null);
+          }}
+          placeholder="hibi_..."
+          placeholderTextColor="#666"
+          secureTextEntry
+          style={styles.input}
+          autoCapitalize="none"
+          autoCorrect={false}
+        />
+        <View style={styles.row}>
+          <Pressable
+            style={[styles.button, !hibiKeyDirty && styles.buttonDisabled]}
+            disabled={!hibiKeyDirty}
+            onPress={onSaveHibiKey}
+          >
+            <Text style={styles.buttonText}>Save</Text>
+          </Pressable>
+          <Pressable
+            style={[styles.button, (hibiTesting || hibiKey.trim().length === 0) && styles.buttonDisabled]}
+            disabled={hibiTesting || hibiKey.trim().length === 0}
+            onPress={onTestHibi}
+          >
+            <Text style={styles.buttonText}>{hibiTesting ? 'Testing…' : 'Test connection'}</Text>
+          </Pressable>
+        </View>
+        {hibiResult && (
+          <Text style={[styles.testResult, hibiResult.ok ? styles.ok : styles.bad]}>
+            {hibiResult.ok ? '✓ ' : '✗ '}
+            {hibiResult.message}
           </Text>
         )}
       </Section>
