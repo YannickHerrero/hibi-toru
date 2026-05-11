@@ -35,6 +35,7 @@
     "expo-video": "~55.0.15",
     "expo-video-thumbnails": "~55.0.14",
     "file-access": "file:./modules/file-access",
+    "hibi-client": "^0.3.0",
     "kuromoji-react-native": "^1.0.1",
     "pako": "^2.1.0",
     "react": "19.2.0",

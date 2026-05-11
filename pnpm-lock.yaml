@@ -83,6 +83,9 @@ importers:
       file-access:
         specifier: file:./modules/file-access
         version: file:modules/file-access
+      hibi-client:
+        specifier: ^0.3.0
+        version: 0.3.0
       kuromoji-react-native:
         specifier: ^1.0.1
         version: 1.0.1
@@ -2216,6 +2219,9 @@ packages:
   hermes-parser@0.35.0:
     resolution: {integrity: sha512-9JLjeHxBx8T4CAsydZR49PNZUaix+WpQJwu9p2010lu+7Kwl6D/7wYFFJxoz+aXkaaClp9Zfg6W6/zVlSJORaA==}
 
+  hibi-client@0.3.0:
+    resolution: {integrity: sha512-FAVYfHxEDe3t0WKm4xBpcTAqL4L/hb5arh4cwCeEkWUq3iO5yIk9EuV4Zgb9wNM/J7heJOENp5TTiLZXN7YIKA==}
+
   hoist-non-react-statics@3.3.2:
     resolution: {integrity: sha512-/gGivxi8JPKWNm/W0jSmzcMPpfpPLc3dY/6GxhX2hQ9iGj3aDfklV4ET7NjKpSinLpJ5vafa9iiGIEZg10SfBw==}
 
@@ -3474,6 +3480,9 @@ packages:
 
   zod@3.25.76:
     resolution: {integrity: sha512-gzUt/qt81nXsFGKIFcC3YnfEAx5NkunCfnDlvuBSSFS02bcXu4Lmea0AFIUwbLWxWPx3d9p8S5QoaujKcNQxcQ==}
+
+  zod@4.4.3:
+    resolution: {integrity: sha512-ytENFjIJFl2UwYglde2jchW2Hwm4GJFLDiSXWdTrJQBIN9Fcyp7n4DhxJEiWNAJMV1/BqWfW/kkg71UDcHJyTQ==}
 
 snapshots:
 
@@ -6072,6 +6081,10 @@ snapshots:
     dependencies:
       hermes-estree: 0.35.0
 
+  hibi-client@0.3.0:
+    dependencies:
+      zod: 4.4.3
+
   hoist-non-react-statics@3.3.2:
     dependencies:
       react-is: 16.13.1
@@ -7475,3 +7488,5 @@ snapshots:
   zlibjs@0.3.1: {}
 
   zod@3.25.76: {}
+
+  zod@4.4.3: {}
