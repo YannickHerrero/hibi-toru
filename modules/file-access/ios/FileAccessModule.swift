@@ -10,7 +10,7 @@ import Foundation
  * launches, we encode the URL into a security-scoped bookmark blob (the
  * "handle") and resolve+open the scope on demand via beginSession.
  *
- * Lifecycle in Pureyaa:
+ * Lifecycle in Hibi Toru:
  *   1. picker returns URL → persistFileAccess(url) → bookmark blob
  *   2. blob stored in entry.videoUri
  *   3. before any read (player, thumbnail, audio extract): beginSession
