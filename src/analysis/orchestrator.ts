@@ -23,7 +23,6 @@ export interface TokenizeOptions {
 }
 
 export interface TranslateAnalysisOptions {
-  apiKey: string;
   onProgress?: (e: ProgressEvent) => void;
   onLog?: (text: string) => void;
   signal?: AbortSignal;
@@ -75,14 +74,13 @@ export async function addTranslations(
   data: AnalysisData,
   opts: TranslateAnalysisOptions,
 ): Promise<void> {
-  const { apiKey, onProgress, onLog, signal } = opts;
+  const { onProgress, onLog, signal } = opts;
   const log = (s: string) => onLog?.(s);
 
-  log(`requesting translation from OpenRouter (${data.cues.length} lines)`);
+  log(`requesting translation via Hibi proxy (${data.cues.length} lines)`);
   const byIndex = new Map<number, Cue>(data.cues.map((c) => [c.index, c]));
   let translatedCount = 0;
   await translateCues({
-    apiKey,
     cues: data.cues.map((c) => ({ index: c.index, text: c.text })),
     signal,
     onLog: log,

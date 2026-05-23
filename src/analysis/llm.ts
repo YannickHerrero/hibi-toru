@@ -1,10 +1,15 @@
 /**
- * Subtitle translation + grammar-note generation via OpenRouter.
+ * Subtitle translation + grammar-note generation via the Hibi AI proxy.
  *
  * The model is hardcoded to claude-sonnet-4.5 because Sonnet handles
  * Japanese grammar nuance noticeably better than Haiku or GPT-4o-mini at
  * a per-episode cost that's effectively rounding error (~$0.03–0.05 per
  * full episode of analysis). Easy to swap if priorities change.
+ *
+ * The OpenRouter key lives encrypted on the Hibi server (configured once
+ * per user in the portal) — this client authenticates to Hibi with a
+ * `hibi_` key and the server makes the OR call with the user's stored
+ * credential. OR bills the user's account.
  *
  * The streaming machinery is unusual: RN's `fetch` buffers SSE bodies and
  * `res.body` is null, so we use XHR which exposes `responseText`
@@ -13,7 +18,8 @@
  * as they're generated rather than waiting for the whole episode.
  */
 
-import { authHeaders, OPENROUTER_BASE } from '@/openrouter/client';
+import { getHibiApiKey } from '@/hibi/hibiApiKey';
+import { HIBI_BASE_URL } from '@/hibi/hibiClient';
 
 export interface CueTranslation {
   index: number;
@@ -22,7 +28,6 @@ export interface CueTranslation {
 }
 
 export interface TranslateOptions {
-  apiKey: string;
   cues: { index: number; text: string }[];
   signal?: AbortSignal;
   onItem?: (item: CueTranslation) => void;
@@ -83,7 +88,11 @@ function streamingPost(
 }
 
 export async function translateCues(opts: TranslateOptions): Promise<CueTranslation[]> {
-  const { apiKey, cues, signal, onItem, onLog } = opts;
+  const { cues, signal, onItem, onLog } = opts;
+  const hibiKey = await getHibiApiKey();
+  if (!hibiKey) {
+    throw new Error('Missing Hibi API key. Set it in Settings.');
+  }
   const userMessage = cues.map((c) => `[${c.index}] ${c.text}`).join('\n');
 
   const parser = new IncrementalArrayParser();
@@ -106,7 +115,7 @@ export async function translateCues(opts: TranslateOptions): Promise<CueTranslat
   let firstChunk = true;
 
   await streamingPost(
-    `${OPENROUTER_BASE}/chat/completions`,
+    `${HIBI_BASE_URL}/v1/ai/chat/completions`,
     JSON.stringify({
       model: ANALYSIS_MODEL,
       max_tokens: 16384,
@@ -118,7 +127,7 @@ export async function translateCues(opts: TranslateOptions): Promise<CueTranslat
     }),
     {
       'content-type': 'application/json',
-      ...authHeaders(apiKey),
+      Authorization: `Bearer ${hibiKey}`,
     },
     (chunk) => {
       chunkCount += 1;

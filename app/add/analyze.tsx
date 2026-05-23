@@ -150,8 +150,6 @@ export default function AnalyzeScreen() {
     abortRef.current = ctl;
     partialDataRef.current = null;
     try {
-      const apiKey = await getOpenRouterApiKey();
-      if (!apiKey) throw new Error('Missing OpenRouter API key. Set it in Settings.');
       const settings = await getSettings();
       settingsRef.current = settings;
 
@@ -190,7 +188,6 @@ export default function AnalyzeScreen() {
 
       try {
         await addTranslations(data, {
-          apiKey,
           signal: ctl.signal,
           onLog,
           onProgress,
