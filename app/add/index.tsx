@@ -14,8 +14,8 @@ import { Directory, File, Paths } from 'expo-file-system';
 import { FileAccess, withSession } from 'file-access';
 import { extractAudio } from 'audio-extract';
 import { detectFromFilename, titleFromFilename } from '@/utils/filenameDetect';
-import { getOpenRouterApiKey } from '@/storage/settings';
-import { audioFormatForFilename, transcribeToSrt } from '@/openrouter/transcribe';
+import { getHibiApiKey } from '@/hibi/hibiApiKey';
+import { audioFormatForFilename, transcribeToSrt } from '@/analysis/transcribe';
 import { uuid } from '@/utils/uuid';
 
 interface PickedFile {
@@ -39,7 +39,7 @@ export default function AddScreen() {
 
   useEffect(() => {
     (async () => {
-      const k = await getOpenRouterApiKey();
+      const k = await getHibiApiKey();
       setHasApiKey(!!k && k.trim().length > 0);
     })();
   }, []);
@@ -89,9 +89,9 @@ export default function AddScreen() {
     setGenerating('extracting');
     let audioPath: string | null = null;
     try {
-      const apiKey = await getOpenRouterApiKey();
-      if (!apiKey) {
-        throw new Error('Set your OpenRouter API key in Settings first.');
+      const hibiKey = await getHibiApiKey();
+      if (!hibiKey) {
+        throw new Error('Set your Hibi API key in Settings first.');
       }
 
       const id = uuid().replace(/-/g, '').slice(0, 12);
@@ -115,7 +115,6 @@ export default function AddScreen() {
       setGenerating('transcribing');
       const audioFilename = audioPath.split('/').pop() ?? 'audio.m4a';
       const srt = await transcribeToSrt({
-        apiKey,
         audioUri: audioPath,
         audioFormat: audioFormatForFilename(audioFilename),
       });

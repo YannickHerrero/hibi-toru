@@ -1,13 +1,15 @@
 /**
- * Whisper transcription via OpenRouter.
+ * Whisper transcription via the Hibi AI proxy.
  *
- * OpenRouter's /audio/transcriptions endpoint diverges from OpenAI's
- * multipart contract — it expects a JSON body with the audio payload
- * inline as base64 under `input_audio: { data, format }`. We ask for
- * `verbose_json` (segments with start/end seconds) and build the SRT
- * ourselves, because OR was observed to silently strip timestamps when
- * `response_format: "srt"` was requested — leaving the parser with a
- * timestampless transcript and "no cues found".
+ * The user's OpenRouter key lives encrypted on the Hibi server — we
+ * authenticate to the proxy with a hibi_ key and the server makes the
+ * upstream call. OR's /audio/transcriptions diverges from OpenAI's
+ * multipart contract — it expects JSON with the audio inline as base64
+ * under `input_audio: { data, format }` — and the proxy forwards that
+ * shape verbatim. We ask for `verbose_json` (segments with start/end
+ * seconds) and build the SRT ourselves because OR was observed to
+ * silently strip timestamps when `response_format: "srt"` was requested,
+ * leaving the parser with a timestampless transcript and "no cues found".
  *
  * Model: whisper-large-v3-turbo. ~12% WER multilingual including
  * Japanese, ~216× real-time at most providers — a 24-min episode
@@ -16,12 +18,12 @@
  */
 
 import { File } from 'expo-file-system';
-import { authHeaders, OPENROUTER_BASE } from './client';
+import { getHibiApiKey } from '@/hibi/hibiApiKey';
+import { HIBI_BASE_URL } from '@/hibi/hibiClient';
 
 const WHISPER_MODEL = 'openai/whisper-large-v3-turbo';
 
 export interface TranscribeOptions {
-  apiKey: string;
   /** file:// URI of the extracted audio. */
   audioUri: string;
   /**
@@ -46,17 +48,22 @@ interface VerboseJsonResponse {
  * segments.
  */
 export async function transcribeToSrt(opts: TranscribeOptions): Promise<string> {
-  const { apiKey, audioUri, audioFormat, language = 'ja' } = opts;
+  const { audioUri, audioFormat, language = 'ja' } = opts;
+
+  const hibiKey = await getHibiApiKey();
+  if (!hibiKey) {
+    throw new Error('Missing Hibi API key. Set it in Settings.');
+  }
 
   const audioBase64 = await new File(audioUri).base64();
 
   let res: Response;
   try {
-    res = await fetch(`${OPENROUTER_BASE}/audio/transcriptions`, {
+    res = await fetch(`${HIBI_BASE_URL}/v1/ai/audio/transcriptions`, {
       method: 'POST',
       headers: {
         'content-type': 'application/json',
-        ...authHeaders(apiKey),
+        Authorization: `Bearer ${hibiKey}`,
       },
       body: JSON.stringify({
         model: WHISPER_MODEL,
