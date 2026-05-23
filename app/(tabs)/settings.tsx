@@ -178,7 +178,7 @@ export default function SettingsScreen() {
       const client = await getHibiClient();
       if (!client) throw new Error('Client could not be initialized.');
       // Use the cards list endpoint as a cheap auth probe.
-      const res = await client.cards.list({ limit: 1 });
+      const res = await client.cards.list({ limit: 1, sort: 'newest' });
       const count = res.items.length;
       setHibiResult({
         ok: true,
