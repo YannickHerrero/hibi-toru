@@ -9,7 +9,6 @@ export const STORAGE_KEYS = {
 } as const;
 
 export const SECURE_KEYS = {
-  openrouterApiKey: 'hibi-toru.openrouterApiKey',
   wanikaniApiKey: 'hibi-toru.wanikaniApiKey',
   hibiApiKey: 'hibi-toru.hibiApiKey',
 } as const;

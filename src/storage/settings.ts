@@ -18,22 +18,6 @@ export async function saveSettings(settings: AppSettings): Promise<void> {
   await AsyncStorage.setItem(STORAGE_KEYS.settings, JSON.stringify(settings));
 }
 
-export async function getOpenRouterApiKey(): Promise<string | null> {
-  try {
-    return await SecureStore.getItemAsync(SECURE_KEYS.openrouterApiKey);
-  } catch {
-    return null;
-  }
-}
-
-export async function setOpenRouterApiKey(key: string): Promise<void> {
-  await SecureStore.setItemAsync(SECURE_KEYS.openrouterApiKey, key);
-}
-
-export async function clearOpenRouterApiKey(): Promise<void> {
-  await SecureStore.deleteItemAsync(SECURE_KEYS.openrouterApiKey);
-}
-
 export async function getWanikaniApiKey(): Promise<string | null> {
   try {
     return await SecureStore.getItemAsync(SECURE_KEYS.wanikaniApiKey);

@@ -13,7 +13,7 @@ import {
   tokenizeSubtitles,
   type ProgressEvent,
 } from '@/analysis/orchestrator';
-import { getOpenRouterApiKey, getSettings } from '@/storage/settings';
+import { getSettings } from '@/storage/settings';
 import { ANALYSIS_MODEL } from '@/analysis/llm';
 import { FileAccess, withSession } from 'file-access';
 import {
