@@ -14,14 +14,10 @@ import { DEFAULT_SETTINGS } from '@/types';
 import {
   getSettings,
   saveSettings,
-  getOpenRouterApiKey,
-  setOpenRouterApiKey,
-  clearOpenRouterApiKey,
   getWanikaniApiKey,
   setWanikaniApiKey,
   clearWanikaniApiKey,
 } from '@/storage/settings';
-import { testOpenRouterApiKey } from '@/openrouter/client';
 import { getHibiApiKey, setHibiApiKey, clearHibiApiKey } from '@/hibi/hibiApiKey';
 import { getHibiClient } from '@/hibi/hibiClient';
 import { syncAllPending } from '@/hibi/sync';
@@ -46,10 +42,6 @@ const MODE_LABELS: Record<SubtitleMode, string> = {
 export default function SettingsScreen() {
   const { theme, setTheme, available } = useThemeSwitcher();
   const [settings, setSettings] = useState<AppSettings>(DEFAULT_SETTINGS);
-  const [apiKey, setApiKeyState] = useState<string>('');
-  const [keyDirty, setKeyDirty] = useState(false);
-  const [testing, setTesting] = useState(false);
-  const [testResult, setTestResult] = useState<{ ok: boolean; message: string } | null>(null);
   const [loaded, setLoaded] = useState(false);
   const [wkKey, setWkKey] = useState<string>('');
   const [wkSyncing, setWkSyncing] = useState(false);
@@ -66,15 +58,13 @@ export default function SettingsScreen() {
 
   useEffect(() => {
     (async () => {
-      const [s, k, w, ws, hk] = await Promise.all([
+      const [s, w, ws, hk] = await Promise.all([
         getSettings(),
-        getOpenRouterApiKey(),
         getWanikaniApiKey(),
         getKanjiCacheStats(),
         getHibiApiKey(),
       ]);
       setSettings(s);
-      setApiKeyState(k ?? '');
       setWkKey(w ?? '');
       setWkStats(ws);
       setHibiKey(hk ?? '');
@@ -87,38 +77,6 @@ export default function SettingsScreen() {
       setLoaded(true);
     })();
   }, []);
-
-  const onSaveKey = async () => {
-    const trimmed = apiKey.trim();
-    if (trimmed.length === 0) {
-      await clearOpenRouterApiKey();
-    } else {
-      await setOpenRouterApiKey(trimmed);
-    }
-    setKeyDirty(false);
-    setTestResult(null);
-  };
-
-  const onTest = async () => {
-    if (!loaded || apiKey.trim().length === 0) return;
-    setTesting(true);
-    setTestResult(null);
-    try {
-      const trimmed = apiKey.trim();
-      if (keyDirty) await setOpenRouterApiKey(trimmed);
-      const info = await testOpenRouterApiKey(trimmed);
-      setKeyDirty(false);
-      setTestResult({
-        ok: true,
-        message: `Connected as "${info.label}" — used $${info.usage.toFixed(2)}` +
-          (info.limit != null ? ` of $${info.limit.toFixed(2)}` : ''),
-      });
-    } catch (e) {
-      setTestResult({ ok: false, message: (e as Error).message });
-    } finally {
-      setTesting(false);
-    }
-  };
 
   const onSyncWanikani = async () => {
     const trimmed = wkKey.trim();
@@ -228,47 +186,12 @@ export default function SettingsScreen() {
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      <Section title="OpenRouter API key">
-        <Label>One key for analysis (Claude), TTS (OpenAI), and Whisper</Label>
-        <TextInput
-          value={apiKey}
-          onChangeText={(t) => {
-            setApiKeyState(t);
-            setKeyDirty(true);
-          }}
-          placeholder="sk-or-v1-..."
-          placeholderTextColor="#666"
-          secureTextEntry
-          style={styles.input}
-          autoCapitalize="none"
-          autoCorrect={false}
-        />
-        <View style={styles.row}>
-          <Pressable
-            style={[styles.button, !keyDirty && styles.buttonDisabled]}
-            disabled={!keyDirty}
-            onPress={onSaveKey}
-          >
-            <Text style={styles.buttonText}>Save</Text>
-          </Pressable>
-          <Pressable
-            style={[styles.button, (testing || apiKey.trim().length === 0) && styles.buttonDisabled]}
-            disabled={testing || apiKey.trim().length === 0}
-            onPress={onTest}
-          >
-            <Text style={styles.buttonText}>{testing ? 'Testing…' : 'Test connection'}</Text>
-          </Pressable>
-        </View>
-        {testResult && (
-          <Text style={[styles.testResult, testResult.ok ? styles.ok : styles.bad]}>
-            {testResult.ok ? '✓ ' : '✗ '}
-            {testResult.message}
-          </Text>
-        )}
-      </Section>
-
       <Section title="Hibi API key">
-        <Label>Mined cards sync to hibi-api.vercel.app</Label>
+        <Label>
+          One key for syncing mined cards plus AI features (Claude translation,
+          Whisper transcription). Configure your OpenRouter key once at
+          app.hibi.app — it stays on the server.
+        </Label>
         <TextInput
           value={hibiKey}
           onChangeText={(t) => {

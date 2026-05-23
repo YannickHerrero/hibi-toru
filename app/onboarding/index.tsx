@@ -5,9 +5,6 @@ import {
   Pressable,
   StyleSheet,
   ActivityIndicator,
-  TextInput,
-  KeyboardAvoidingView,
-  Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -17,10 +14,8 @@ import {
   type InstallStage,
 } from '@/onboarding/dict-installer';
 import { markOnboarded } from '@/onboarding/state';
-import { setOpenRouterApiKey } from '@/storage/settings';
-import { testOpenRouterApiKey } from '@/openrouter/client';
 
-type Phase = 'welcome' | 'install' | 'api-key';
+type Phase = 'welcome' | 'install';
 
 const STAGE_LABELS: Record<InstallStage, string> = {
   'fetching-release': 'Checking for latest dictionaries',
@@ -67,8 +62,7 @@ export default function OnboardingScreen() {
   return (
     <SafeAreaView style={styles.container}>
       {phase === 'welcome' && <Welcome onContinue={() => setPhase('install')} />}
-      {phase === 'install' && <Install onDone={() => setPhase('api-key')} />}
-      {phase === 'api-key' && <ApiKey onDone={finish} />}
+      {phase === 'install' && <Install onDone={finish} />}
     </SafeAreaView>
   );
 }
@@ -78,8 +72,10 @@ function Welcome({ onContinue }: { onContinue: () => void }) {
     <View style={styles.body}>
       <Text style={styles.title}>Welcome to Hibi Toru</Text>
       <Text style={styles.copy}>
-        We&apos;ll grab the Japanese dictionaries you need (~25 MB) and then ask
-        for your OpenRouter API key. One-time setup.
+        We&apos;ll grab the Japanese dictionaries you need (~25 MB). One-time
+        setup. To use the AI features (translation, transcription), paste
+        your Hibi API key in Settings — and configure your OpenRouter key
+        once at app.hibi.app.
       </Text>
       <Pressable style={styles.primary} onPress={onContinue}>
         <Text style={styles.primaryText}>Get started</Text>
@@ -145,81 +141,6 @@ function Install({ onDone }: { onDone: () => void }) {
         Processing happens on device — JMnedict is the slowest step (~30s).
       </Text>
     </View>
-  );
-}
-
-function ApiKey({ onDone }: { onDone: () => void }) {
-  const [key, setKey] = useState('');
-  const [testing, setTesting] = useState(false);
-  const [result, setResult] = useState<{ ok: boolean; message: string } | null>(null);
-  const trimmed = key.trim();
-
-  const onTest = async () => {
-    if (trimmed.length === 0) return;
-    setTesting(true);
-    setResult(null);
-    try {
-      const info = await testOpenRouterApiKey(trimmed);
-      setResult({ ok: true, message: `Connected (${info.label}).` });
-    } catch (e) {
-      setResult({ ok: false, message: (e as Error).message });
-    } finally {
-      setTesting(false);
-    }
-  };
-
-  const onContinue = async () => {
-    if (trimmed.length > 0) await setOpenRouterApiKey(trimmed);
-    await onDone();
-  };
-
-  return (
-    <KeyboardAvoidingView
-      style={styles.flex}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-    >
-      <View style={styles.body}>
-        <Text style={styles.title}>OpenRouter API key</Text>
-        <Text style={styles.copy}>
-          Hibi Toru uses OpenRouter to call Claude (translation), Whisper
-          (subtitles), and OpenAI TTS through a single key. Create one at
-          openrouter.ai/keys — you can also add it later in Settings.
-        </Text>
-        <TextInput
-          value={key}
-          onChangeText={(t) => {
-            setKey(t);
-            setResult(null);
-          }}
-          placeholder="sk-or-v1-..."
-          placeholderTextColor="#666"
-          secureTextEntry
-          style={styles.input}
-          autoCapitalize="none"
-          autoCorrect={false}
-        />
-        <View style={styles.row}>
-          <Pressable
-            style={[styles.secondary, (testing || trimmed.length === 0) && styles.disabled]}
-            disabled={testing || trimmed.length === 0}
-            onPress={onTest}
-          >
-            <Text style={styles.secondaryText}>{testing ? 'Testing…' : 'Test'}</Text>
-          </Pressable>
-          <Pressable style={[styles.primary, styles.flex]} onPress={onContinue}>
-            <Text style={styles.primaryText}>
-              {trimmed.length === 0 ? 'Skip for now' : 'Save & continue'}
-            </Text>
-          </Pressable>
-        </View>
-        {result && (
-          <Text style={[styles.testResult, result.ok ? styles.ok : styles.bad]}>
-            {result.ok ? '✓ ' : '✗ '}
-            {result.message}
-          </Text>
-        )}
-      </View>
-    </KeyboardAvoidingView>
   );
 }
 
